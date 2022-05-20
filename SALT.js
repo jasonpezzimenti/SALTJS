@@ -1,5 +1,5 @@
 var SALT = {
-    input: '-> { firstName: "Jason", lastName: "Pezzimenti"; out with firstName;; }',
+    input: '-> { firstName: "Jason", lastName: "Pezzimenti"; out with firstName; }',
     tokens: []
 };
 
