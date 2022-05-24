@@ -1,6 +1,12 @@
 var SALT = {
-    input: '-> { firstName: "Jason", lastName: "Pezzimenti"; out with firstName; }',
-    tokens: []
+    input: '-> out with "Hello.";',
+    tokens: [
+    	token = {
+    		type: "",
+    		name: "",
+    		value: ""
+    	}
+    ]
 };
 
 // Operators.
@@ -15,7 +21,11 @@ SALT.operators = {
     multiplicationOperator: "*",
     subtractionOperator: "-",
     divisionOperator: "/",
-    modulusOperator: "%"
+    modulusOperator: "%",
+    lessThanOperator: "<",
+    greaterThanOperator: ">",
+    logicalANDOperator: "&&",
+    equationOperator: "="
 };
 
 // Symbols.
@@ -44,7 +54,9 @@ SALT.keywords = {
     as: "as",
     was: "was",
     is: "is",
-    has: "has"
+    has: "has",
+    else: "else",
+    if: "if"
 };
 
 SALT.variables = [
@@ -62,7 +74,7 @@ SALT.Helpers.isLetter = function(input) {
 }
 
 SALT.Helpers.isWord = function(input) {
-    return input.match(/[a-z]/i) && input.length >= 1;
+    return input.match(/^[a-zA-Z]+$/);
 }
 
 SALT.Helpers.isSymbol = function(input) {
