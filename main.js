@@ -4,301 +4,183 @@ var identifier = "",
 	previous,
 	next,
 	position = 0,
-	quoteFound = false,
-	identifierFound = false,
 	isInsideString = false,
-	isConcatenating = false,
-	endOfStringReached = false,
-	concatenationOperatorFound = false,
-	expectingStringOrIdentifier = false,
-	expectingNumberOrIdentifier = false,
-	expectingParameters = false,
-	actionOperatorFound = false;
+	expectingNumberOrIdentifier = false;
+
+SALT.tokens = [];
+
+function tokenizeLetter() {
+	string += character;
+		
+	identifier += character;
+	
+	if(SALT.Helpers.isReservedKeyword(string)) {
+		SALT.tokens.push(string);
+		string = "";
+		identifier = "";
+	}
+}
+
+function tokenizeDigit() {
+	string += character;
+	identifier += character;
+}
+
+function pushIdentifierIfExists() {
+	if(identifier != "") {
+		SALT.tokens.push(identifier);
+		string = "";
+		identifier = "";
+		expectingNumberOrIdentifier = false;
+	}
+}
+
+function tokenizeWhiteSpace() {
+	pushIdentifierIfExists();
+}
+
+function tokenizeOperator() {
+	pushIdentifierIfExists();
+
+	if (expectingNumberOrIdentifier && 
+		(character === SALT.operators.subtractionOperator || character === SALT.operators.additionOperator)) {
+		string += character;
+		identifier += character;
+	}
+	else {
+		SALT.tokens.push(character);
+		string = "";
+		identifier = "";
+		expectingNumberOrIdentifier = true;
+	}
+}
+
+function tokenizeHyphen() {
+
+	if(position < SALT.input.length - 1) {
+		var checkActionOperator = character + SALT.input[position + 1];
+
+		if(checkActionOperator === SALT.operators.actionOperator) {
+			pushIdentifierIfExists();
+			SALT.tokens.push(SALT.operators.actionOperator);
+			position++;
+			index++;
+			return;
+		}
+	}
+
+	tokenizeOperator();
+}
+
+function tokenizeDoubleQuote() {
+	if(isInsideString) {
+		string += SALT.symbols.doubleQuote;
+		identifier += SALT.symbols.doubleQuote;
+
+		pushIdentifierIfExists();
+		isInsideString = false;
+	}
+	else {
+		pushIdentifierIfExists();
+
+		isInsideString = true;
+		
+		string += SALT.symbols.doubleQuote;
+		identifier += SALT.symbols.doubleQuote;
+	}
+}
+
+function tokenizeBackSlash() {
+	if(isInsideString) {
+
+		if(position < SALT.input.length - 1) {
+			position++;
+			index++;
+
+			var next = SALT.input[position];
+
+			string += character + next;
+			identifier += character + next;
+		}
+		else {
+			console.error("Unexpected end of file. We expect a backslash thingy.")
+		}
+	}
+	else {
+		console.error("Backslash outside of string");
+	}
+}
+
+function tokenizeSymbol() {
+	switch(character) {
+		case SALT.symbols.openingParenthesis:
+		case SALT.symbols.closingParenthesis:
+		case SALT.symbols.openingBrace:
+		case SALT.symbols.closingBrace:
+			pushIdentifierIfExists();
+
+			SALT.tokens.push(character);
+		break;
+		case SALT.symbols.doubleQuote:
+			tokenizeDoubleQuote();
+		break;
+		case SALT.symbols.backSlash:
+			tokenizeBackSlash();
+		break;
+		case SALT.symbols.EOS:
+			pushIdentifierIfExists();
+
+			SALT.tokens.push(SALT.symbols.EOS);
+		break;
+		case SALT.operators.subtractionOperator:
+		case SALT.symbols.hyphen:
+			tokenizeHyphen();
+		break;
+		case SALT.symbols.openingAngleBracket:
+		case SALT.symbols.closingAngleBracket:
+		case SALT.operators.assignmentOperator:
+		case SALT.symbols.comma:
+		case SALT.operators.concatenationOperator:
+		case SALT.operators.additionOperator:
+		case SALT.operators.divisionOperator:
+		case SALT.operators.modulusOperator:
+		case SALT.operators.multiplicationOperator:
+		case SALT.operators.equationOperator:
+			tokenizeOperator();
+		break;
+		case SALT.symbols.whiteSpace:
+			tokenizeWhiteSpace();
+		break;
+		default:
+			console.error("ERROR: for " + character);
+		break;
+	}
+}
 
 for(var index = 0; index < SALT.input.length; index++) {
 	position = index;
 	character = SALT.input[position];
-	
-	if(SALT.Helpers.isLetter(character)) {
+
+	if(isInsideString && character !== SALT.symbols.doubleQuote && character !== SALT.symbols.backSlash) {
 		string += character;
-		
-		if(!isInsideString) {
-			if(expectingParameters) {
-				identifierFound = true;
-				identifier += character;
-			}
-			else {
-				identifierFound = true;
-				identifier += character;
-			}
-		}
+		identifier += character;
+		continue;
+	}
 
-		if(character === SALT.symbols.whiteSpace) {
-			if(!isInsideString) {
-				if(string !== "") {
-					SALT.tokens.push(string);
-				}
-
-				SALT.tokens.push(SALT.symbols.whiteSpace);
-			}
-		}
-		
-		if(SALT.Helpers.isReservedKeywordOrOperator(string)) {
-			switch(string) {
-				case SALT.operators.out:
-					SALT.tokens.push(SALT.operators.out);
-					string = "";
-				break;
-				case SALT.operators.return:
-					SALT.tokens.push(SALT.operators.return);
-					string = "";
-				break;
-				case SALT.keywords.with:
-					SALT.tokens.push(SALT.keywords.with);
-					string = "";
-					expectingStringOrIdentifier = true;
-				break; 
-			}
-		}
-		else {
-			
-		}
+	if(SALT.Helpers.isLetter(character)) {
+		tokenizeLetter();
+		continue;
 	}
 	else if(SALT.Helpers.isDigit(character)) {
-		if(isInsideString) {
-			string += character;
-		}
-		else{
-			if(identifierFound) {
-				string += character;
-			}
-
-			expectingNumberOrIdentifier = true;
-		}
+		tokenizeDigit();
+		continue;
 	}
-	else if(SALT.Helpers.isSymbol(character)) {
-		switch(character) {
-			case SALT.symbols.hyphen:
-				if(expectingNumberOrIdentifier) {
-					expectingNumberOrIdentifier = true;
-					if(string !== "") {
-						SALT.tokens.push(string);
-						string = character;
-						SALT.tokens.push(string);
-						string = "";
-					}
-				}
-				else {
-					string += character;
-					previous = character;
-
-					next = SALT.input[++position];
-					if(identifierFound && next === SALT.symbols.closingAngleBracket) {
-						identifierFound = false;
-						SALT.tokens.push(identifier);
-						SALT.tokens.push(SALT.operators.actionOperator);
-						identifier = "";
-						string = "";
-					}
-				}				
-			break;
-			case SALT.symbols.closingAngleBracket:
-				if(isInsideString) {
-					string += character;
-				}
-				else {
-					if(previous === SALT.symbols.hyphen) {
-						string += character;
-						if(string === SALT.operators.actionOperator) {
-							SALT.tokens.push(SALT.operators.actionOperator);
-							string = "";
-							actionOperatorFound = true;
-						}
-					}
-				}
-			break;
-			case SALT.operators.assignmentOperator:
-				if(identifier !== null) {
-					SALT.tokens.push(identifier);
-					SALT.tokens.push(SALT.operators.assignmentOperator);
-					identifierFound = true;
-					string = "";
-				}
-			break;
-			case SALT.symbols.openingParenthesis:
-				if(identifierFound) {
-					string += character;
-					SALT.tokens.push(identifier);
-					SALT.tokens.push(SALT.symbols.openingParenthesis);
-					string = "";
-					expectingParameters = true;
-				}
-			break;
-			case SALT.symbols.closingParenthesis:
-				if(identifierFound) {
-					
-					SALT.tokens.push(string);
-					SALT.tokens.push(SALT.symbols.closingParenthesis);
-					string = "";
-					expectingParameters = false;
-					identifier = "";
-					identifierFound = false;
-
-				}
-			break;
-			case SALT.symbols.openingBrace:
-				if(isInsideString) {
-					string += character;
-				}
-				else {
-					isInsideScope = true;
-					// string += character;
-					SALT.tokens.push(SALT.symbols.openingBrace);
-					string = "";
-				}
-			break;
-			case SALT.symbols.closingBrace:
-				if(!isInsideString) {
-					isInsideScope = false;
-					SALT.tokens.push(SALT.symbols.closingBrace);
-				}
-				else {
-					string += character;
-				}
-			break;
-			case SALT.symbols.comma:
-				if(expectingParameters) {
-					// string += character;
-					SALT.tokens.push(string);
-					SALT.tokens.push(SALT.symbols.comma);
-					// console.log(string);
-					string = "";
-					identifier = "";
-				}
-			break;
-			case SALT.symbols.doubleQuote:
-				if(!isInsideString) {
-					isInsideString = true;
-					
-					if(identifierFound) {
-						SALT.tokens.push(SALT.symbols.doubleQuote);
-						identifierFound = false;
-						identifier = "";
-					}
-					else {
-						SALT.tokens.push(SALT.symbols.doubleQuote);
-					}
-				}
-				else {
-					if(previous === SALT.symbols.backSlash) {
-						string += character;
-						previous = "";
-					}
-					else {
-						if(string !== "") {
-							SALT.tokens.push(string);
-						}
-						SALT.tokens.push(SALT.symbols.doubleQuote);
-						string = "";
-						isInsideString = false;
-					}
-					
-					if(identifierFound) {
-						string += character;
-					}
-				}
-			break;
-			case SALT.symbols.backSlash:
-				if(isInsideString) {
-					if(previous === SALT.symbols.backSlash) {
-						string += character;
-					}
-					
-					previous = SALT.symbols.backSlash;
-				}
-			case SALT.symbols.EOS:
-				if(identifierFound) {
-					if(string !== "") {
-						SALT.tokens.push(string);
-						identifierFound = false;
-						identifier = "";
-					}
-					
-					identifierFound = false;
-					expectingStringOrIdentifier = false;
-					isInsideString = false;
-					string = "";
-					identifier = "";
-				}
-
-				SALT.tokens.push(SALT.symbols.EOS);
-			break;
-			case SALT.operators.concatenationOperator:
-				expectingStringOrIdentifier = true;
-				if(string !== "") {
-					SALT.tokens.push(string);
-				}
-
-				string = "";
-				SALT.tokens.push(SALT.operators.concatenationOperator);
-			break;
-			case SALT.operators.additionOperator:
-				expectingNumberOrIdentifier = true;
-				if(string !== "") {
-					SALT.tokens.push(string);
-				}
-
-				string = "";
-				SALT.tokens.push(SALT.operators.concatenationOperator);
-			break;
-			case SALT.operators.multiplicationOperator:
-				expectingNumberOrIdentifier = true;
-				if(string !== "") {
-					SALT.tokens.push(string);
-					string = character;
-					SALT.tokens.push(string);
-					string = "";
-				}
-			break;
-			case SALT.operators.subtractionOperator:
-				expectingNumberOrIdentifier = true;
-				if(string !== "") {
-					SALT.tokens.push(string);
-					string = character;
-					SALT.tokens.push(string);
-					string = "";
-				}
-			break;
-			case SALT.operators.divisionOperator:
-				expectingNumberOrIdentifier = true;
-				if(string !== "") {
-					SALT.tokens.push(string);
-					string = character;
-					SALT.tokens.push(string);
-					string = "";
-				}
-			break;
-			case SALT.operators.modulusOperator:
-				expectingNumberOrIdentifier = true;
-				if(string !== "") {
-					SALT.tokens.push(string);
-					string = character;
-					SALT.tokens.push(string);
-					string = "";
-				}
-			break;
-			case SALT.symbols.whiteSpace:
-				if(isInsideString) {
-					string += character;
-				}
-			break;
-			default:
-				if(isInsideString) {
-					string += character;
-				}
-			break;
-		}
+	else if(SALT.Helpers.isSymbol(character)
+		|| SALT.Helpers.isOperator(character)) {
+		tokenizeSymbol();
+		continue;
 	}
 }
 
+console.log(SALT.input);
 console.log(SALT.tokens);
