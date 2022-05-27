@@ -1,0 +1,61 @@
+digit: [0-9];
+letter: [a-ZA-Z];
+word: [a-ZA-Z]+;
+number: digit*;
+
+comment: Operators;
+additionOperator: "+";
+minus: "-";
+return: "return";
+actionOperator: "->";
+out: "out";
+concatenationOperator: "+";
+assignmentOperator: ":";
+multiplicationOperator: "*";
+subtractionOperator: "-";
+divisionOperator: "/";
+modulusOperator: "%";
+lessThanOperator: "<";
+greaterThanOperator: ">";
+logicalANDOperator: "&&";
+equationOperator: "="
+
+comment: Symbols;
+openingParenthesis: "(";
+closingParenthesis: ")";
+openingBracket: "[";
+closingBracket: "]";
+openingBrace: "{";
+closingBrace: "}";
+openingAngleBracket: "<";
+closingAngleBracket: ">";
+hyphen: "-";
+EOS: ";";
+whiteSpace: " ";
+doubleQuote: "\"";
+backSlash: "\\";
+returnCarriage: "\r";
+newLineCharacter: "\n";
+comma: ",";
+period: "."
+
+comment: Reserved Keywords;
+with: "with";
+as: "as";
+was: "was";
+is: "is";
+has: "has";
+else: "else";
+if: "if";
+
+scopeStart: openingBrace;
+scopeEnd: closingBrace;
+
+scope: scopeStart statement* scopeEnd;
+
+action: (actionOperator scopeStart statement* scopeEnd) | (identifier actionOperator scopeStart statement* scopeEnd) | (actionOperator identifier EOS) | (identifier EOS);
+outStatement: out with statement | expression;
+
+ifStatement: if expression [scopeStart] statement* [scopeEnd] | if expression [scopeStart] statement* [scopeEnd] else [scopeStart] statement* [scopeEnd];
+
+expression
