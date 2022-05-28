@@ -8,11 +8,11 @@ var identifier,
 
 var errors = [
     error = {
-        message: ""
-    },
-    type = "",
-    line = "",
-    position = "",
+        message: "",
+        type: "",
+        line: "",
+        position: ""
+    }
 ];
 
 var variables = [
