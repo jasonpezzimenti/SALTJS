@@ -3,6 +3,7 @@ var identifier = "",
     character = "",
     previous = "",
     next = "",
+    position = -1,
     isInsideString = false,
     isInsideParentheses = false,
     isInsideBrackets = false,
@@ -33,11 +34,37 @@ var identifier = "",
     isExpectingActionIdentifier = false;
 
 for (var index = 0; index < SALT.input.length; index++) {
-    if (isInsideString) {
+    position = index;
+    character = SALT.input[position];
 
+    if (isInsideString) {
+        if (character === SALT.symbols.backSlash) {
+            string += character;
+            previous = SALT.symbols.backSlash;
+        }
+
+        if (character === SALT.symbols.doubleQuote) {
+            if (previous === SALT.symbols.backSlash) {
+                string += character;
+                previous = "";
+            }
+            else {
+                SALT.tokens.push({ type: "Value", name: "StringValue", value: string });
+                SALT.tokens.push({ type: "Symbol", name: "DoubleQuoteSymbol", value: SALT.symbols.doubleQuote });
+
+                isInsideString = false;
+
+                string = "";
+            }
+        }
+        else {
+            string += character;
+        }
     }
     else {
-        string += character;
+        if (character !== SALT.symbols.whiteSpace) {
+            string += character;
+        }
 
         if (SALT.Helpers.isOperator(string)) {
             switch (string) {
@@ -76,6 +103,9 @@ for (var index = 0; index < SALT.input.length; index++) {
                     break;
                 default:
                     // Figure this out later.
+                    if (string === SALT.symbols.whiteSpace) {
+                        string = "";
+                    }
                     break;
             }
         }
@@ -96,6 +126,27 @@ for (var index = 0; index < SALT.input.length; index++) {
                     break;
                 case SALT.keywords.else:
                     break;
+            }
+        }
+        else if (SALT.Helpers.isSymbol(string)) {
+            if (string !== SALT.symbols.whiteSpace) {
+                SALT.tokens.push({ type: "Symbol", name: "Symbol", value: string });
+
+                if (character === SALT.symbols.doubleQuote) {
+                    isInsideString = true;
+                }
+
+                string = "";
+            }
+        }
+        else {
+            if (SALT.Helpers.isLetter(string)) {
+                if (character === SALT.symbols.whiteSpace) {
+                    string = "";
+                }
+            }
+            else {
+
             }
         }
     }

@@ -25,7 +25,7 @@ SALT.operators = {
     lessThanOperator: "<",
     greaterThanOperator: ">",
     logicalANDOperator: "&&",
-    equationOperator: "="
+    equalityOperator: "="
 };
 
 // Symbols.
