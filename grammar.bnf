@@ -57,5 +57,3 @@ action: (actionOperator scopeStart statement* scopeEnd) | (identifier actionOper
 outStatement: out with statement | expression;
 
 ifStatement: if expression [scopeStart] statement* [scopeEnd] | if expression [scopeStart] statement* [scopeEnd] else [scopeStart] statement* [scopeEnd];
-
-expression

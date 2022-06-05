@@ -1,5 +1,5 @@
 var SALT = {
-    input: 'test = "\\n \\\\ \\"blub"; if(1 < 2) { -> out if with as a a1 1 * -2 a} "Hello."; }',
+    input: 'out with "Hello.";',
     tokens: [
     	token = {
     		type: "",
@@ -45,7 +45,8 @@ SALT.symbols = {
     backSlash: "\\",
     returnCarriage: "\r",
     newLineCharacter: "\n",
-    comma: ","
+    comma: ",",
+    plus: "+"
 };
 
 // Reserved Keywords.
@@ -59,9 +60,21 @@ SALT.keywords = {
     if: "if"
 };
 
+SALT.errors = [
+    error = {
+        type: "",
+        message: "",
+        line: "",
+        position: ""
+    }
+]
+
 SALT.variables = [
-    name = "",
-    value = ""
+    variable = {
+        name: "",
+        type: "",
+        value: ""
+    }
 ];
 
 SALT.Helpers = {
@@ -99,4 +112,8 @@ SALT.Helpers.isOperator = function(input) {
 
 SALT.Helpers.isReservedKeyword = function(input) {
     return Object.values(SALT.keywords).includes(input);
+}
+
+SALT.Helpers.isReservedKeywordOrOperator = function(input) {
+    return Object.values(SALT.keywords).includes(input) || Object.values(SALT.operators).includes(input);
 }

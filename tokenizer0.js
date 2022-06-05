@@ -24,7 +24,7 @@ for(var index = 0; index < SALT.input.length; index++) {
 	if(SALT.Helpers.isLetter(character)) {
 		string += character;
 		
-		if(!isInsideString) {
+		if(!isInsideString) {			
 			if(isInsideIfStatement) {
 				// SALT.tokens.push(character);
 			}
@@ -38,7 +38,7 @@ for(var index = 0; index < SALT.input.length; index++) {
 		if(character === SALT.symbols.whiteSpace) {
 			if(!isInsideString) {
 				if(string !== "") {
-					SALT.tokens.push(string);
+					SALT.tokens.push({ type: "Value", name: "StringValue", value: string });
 				}
 
 				SALT.tokens.push(SALT.symbols.whiteSpace);
@@ -48,25 +48,26 @@ for(var index = 0; index < SALT.input.length; index++) {
 		if(SALT.Helpers.isReservedKeywordOrOperator(string)) {
 			switch(string) {
 				case SALT.operators.out:
-					SALT.tokens.push(SALT.operators.out);
+					SALT.tokens.push({ type: "Operator", name: "OutOperator", value: SALT.operators.out });
+
 					string = "";
 				break;
 				case SALT.operators.return:
-					SALT.tokens.push(SALT.operators.return);
+					SALT.tokens.push({ type: "Operator", name: "ReturnOperator", value: SALT.operators.return });
 					string = "";
 				break;
 				case SALT.keywords.with:
-					SALT.tokens.push(SALT.keywords.with);
+					SALT.tokens.push({ type: "Keyword", name: "WithKeyword", value: SALT.keywords.with });
 					string = "";
 					expectingStringOrIdentifier = true;
 				break; 
 				case SALT.keywords.else:
-					SALT.tokens.push(SALT.keywords.else);
+					SALT.tokens.push({ type: "Keyword", name: "ElseKeyword", value: SALT.keywords.else });
 					string = "";
 					// Expecting open parenthesis.
 				break;
 				case SALT.keywords.if:
-					SALT.tokens.push(SALT.keywords.if);
+					SALT.tokens.push({ type: "Keyword", name: "IfKeyword", value: SALT.keywords.if });
 
 					isInsideIfStatement = true;
 					string = "";
@@ -100,9 +101,9 @@ for(var index = 0; index < SALT.input.length; index++) {
 				if(expectingNumberOrIdentifier) {
 					expectingNumberOrIdentifier = true;
 					if(string !== "") {
-						SALT.tokens.push(string);
+						SALT.tokens.push({ type: "Value", name: "StringValue", value: string });
 						string = character;
-						SALT.tokens.push(string);
+						SALT.tokens.push({ type: "Value", name: "StringValue", value: string });
 						string = "";
 					}
 				}
@@ -113,8 +114,12 @@ for(var index = 0; index < SALT.input.length; index++) {
 					next = SALT.input[++position];
 					if(identifierFound && next === SALT.symbols.closingAngleBracket) {
 						identifierFound = false;
-						SALT.tokens.push(identifier);
-						SALT.tokens.push(SALT.operators.actionOperator);
+
+						if (identifier !== "") {
+							SALT.tokens.push({ type: "Identifier", name: "Identifier", value: identifier });
+						}
+
+						SALT.tokens.push({ type: "Operator", name: "ActionOperator", value: SALT.operators.actionOperator });
 						identifier = "";
 						string = "";
 					}
@@ -128,7 +133,7 @@ for(var index = 0; index < SALT.input.length; index++) {
 					if(previous === SALT.symbols.hyphen) {
 						string += character;
 						if(string === SALT.operators.actionOperator) {
-							SALT.tokens.push(SALT.operators.actionOperator);
+							SALT.tokens.push({ type: "Operator", name: "ActionOperator", value: SALT.operators.actionOperator });
 							string = "";
 							actionOperatorFound = true;
 						}
@@ -137,35 +142,41 @@ for(var index = 0; index < SALT.input.length; index++) {
 					}
 					
 					if(!previous === SALT.symbols.hyphen) {
-						SALT.tokens.push(SALT.operators.greaterThanOperator);
+						SALT.tokens.push({ type: "Operator", name: "GreaterThanOperator", value: SALT.operators.greaterThanOperator });
 					}
 				}
 			break;
 			case SALT.operators.assignmentOperator:
-				if(identifier !== null) {
-					SALT.tokens.push(identifier);
-					SALT.tokens.push(SALT.operators.assignmentOperator);
+				if (identifier !== null) {
+					if (identifier !== "") {
+						SALT.tokens.push(identifier);
+					}
+
+					SALT.tokens.push({ type: "Operator", name: "AssignmentOperator", value: SALT.operators.assignmentOperator });
 					identifierFound = true;
 					string = "";
 				}
 			break;
 			case SALT.symbols.openingAngleBracket:
 				// string += character;
-				// SALT.tokens.push(string);
-				SALT.tokens.push(SALT.symbols.openingAngleBracket);
+				// SALT.tokens.push({ type: "Value", name: "StringValue", value: string });
+				SALT.tokens.push({ type: "Symbol", name: "OpeningAngleBracketSymbol", value: SALT.symbols.openingAngleBracket});
+
 				string = "";
 
 			break;
 			case SALT.symbols.openingParenthesis:
 				if(identifierFound) {
 					string += character;
-					SALT.tokens.push(identifier);
-					SALT.tokens.push(SALT.symbols.openingParenthesis);
+					if (identifier !== "") {
+						SALT.tokens.push(identifier);
+					}
+					SALT.tokens.push({ type: "Symbol", name: "OpeningParenthesisSymbol", value: SALT.symbols.openingParenthesis });
 					string = "";
 					expectingParameters = true;
 				}
 				else {
-					SALT.tokens.push(SALT.symbols.openingParenthesis);
+					SALT.tokens.push({ type: "Symbol", name: "OpeningParenthesisSymbol", value: SALT.symbols.openingParenthesis });
 					expectingParameters = true;
 				}
 			break;
@@ -173,10 +184,11 @@ for(var index = 0; index < SALT.input.length; index++) {
 				if(identifierFound) {
 					
 					if(string !== "") {
-						SALT.tokens.push(string);
+						SALT.tokens.push({ type: "Value", name: "StringValue", value: string });
 					}
 
-					SALT.tokens.push(SALT.symbols.closingParenthesis);
+					SALT.tokens.push({ type: "Symbol", name: "ClosingParenthesisSymbol", value: SALT.symbols.closingParenthesis });
+
 					string = "";
 					expectingParameters = false;
 					identifier = "";
@@ -184,7 +196,8 @@ for(var index = 0; index < SALT.input.length; index++) {
 					expectingNumberOrIdentifier = false;
 				}
 				else {
-					SALT.tokens.push(SALT.symbols.closingParenthesis);
+					SALT.tokens.push({ type: "Symbol", name: "ClosingParenthesisSymbol", value: SALT.symbols.closingParenthesis });
+
 					expectingParameters = false;
 					expectingNumberOrIdentifier = false;
 				}
@@ -196,14 +209,15 @@ for(var index = 0; index < SALT.input.length; index++) {
 				else {
 					isInsideScope = true;
 					// string += character;
-					SALT.tokens.push(SALT.symbols.openingBrace);
+					SALT.tokens.push({ type: "Symbol", name: "OpeningBraceSymbol", value: SALT.symbols.openingBrace });
+
 					string = "";
 				}
 			break;
 			case SALT.symbols.closingBrace:
 				if(!isInsideString) {
 					isInsideScope = false;
-					SALT.tokens.push(SALT.symbols.closingBrace);
+					SALT.tokens.push({ type: "Symbol", name: "ClosingBraceSymbol", value: SALT.symbols.closingBrace });
 				}
 				else {
 					string += character;
@@ -212,28 +226,28 @@ for(var index = 0; index < SALT.input.length; index++) {
 			case SALT.symbols.comma:
 				if(expectingParameters) {
 					// string += character;
-					SALT.tokens.push(string);
-					SALT.tokens.push(SALT.symbols.comma);
+					SALT.tokens.push({ type: "Value", name: "StringValue", value: string });
+					SALT.tokens.push({ type: "Symbol", name: "CommaSymbol", value: SALT.symbols.comma });
 					// console.log(string);
 					string = "";
 					identifier = "";
 				}
 
 				if(!isInsideString) {
-					SALT.tokens.push(SALT.symbols.comma);
+					SALT.tokens.push({ type: "Symbol", name: "CommaSymbol", value: SALT.symbols.comma });
 				}
 			break;
 			case SALT.symbols.doubleQuote:
 				if(!isInsideString) {
 					isInsideString = true;
 					
-					if(identifierFound) {
-						SALT.tokens.push(SALT.symbols.doubleQuote);
+					if (identifierFound) {
+						SALT.tokens.push({ type: "Symbol", name: "DoubleQuoteSymbol", value: SALT.symbols.doubleQuote });
 						identifierFound = false;
 						identifier = "";
 					}
 					else {
-						SALT.tokens.push(SALT.symbols.doubleQuote);
+						SALT.tokens.push({ type: "Symbol", name: "DoubleQuoteSymbol", value: SALT.symbols.doubleQuote });
 					}
 				}
 				else {
@@ -243,9 +257,9 @@ for(var index = 0; index < SALT.input.length; index++) {
 					}
 					else {
 						if(string !== "") {
-							SALT.tokens.push(string);
+							SALT.tokens.push({ type: "Value", name: "StringValue", value: string });
 						}
-						SALT.tokens.push(SALT.symbols.doubleQuote);
+						SALT.tokens.push({ type: "Symbol", name: "DoubleQuoteSymbol", value: SALT.symbols.doubleQuote });
 						string = "";
 						isInsideString = false;
 					}
@@ -266,7 +280,7 @@ for(var index = 0; index < SALT.input.length; index++) {
 			case SALT.symbols.EOS:
 				if(identifierFound) {
 					if(string !== "") {
-						SALT.tokens.push(string);
+						SALT.tokens.push({ type: "Value", name: "StringValue", value: string });
 						identifierFound = false;
 						identifier = "";
 					}
@@ -278,52 +292,54 @@ for(var index = 0; index < SALT.input.length; index++) {
 					identifier = "";
 				}
 				else {
-					SALT.tokens.push(identifier);
+					if (identifier !== "") {
+						SALT.tokens.push(identifier);
+					}
 				}
 
-				SALT.tokens.push(SALT.symbols.EOS);
+				SALT.tokens.push({ type: "Symbol", name: "EndOfStatementSymbol", value: SALT.symbols.EOS });
 			break;
 			case SALT.operators.concatenationOperator:
 				expectingStringOrIdentifier = true;
 				if(string !== "") {
-					SALT.tokens.push(string);
+					SALT.tokens.push({ type: "Value", name: "StringValue", value: string });
 				}
 
 				string = "";
-				SALT.tokens.push(SALT.operators.concatenationOperator);
+				SALT.tokens.push({ type: "Operator", name: "ConcatenationOperator", value: SALT.symbols.concatenationOperator });
 			break;
 			case SALT.operators.additionOperator:
 				expectingNumberOrIdentifier = true;
 				if(string !== "") {
-					SALT.tokens.push(string);
+					SALT.tokens.push({ type: "Value", name: "StringValue", value: string });
 				}
 
 				string = "";
-				SALT.tokens.push(SALT.operators.concatenationOperator);
+				SALT.tokens.push({ type: "Operator", name: "ConcatenationOperator", value: SALT.symbols.concatenationOperator });
 			break;
 			case SALT.operators.multiplicationOperator:
 				expectingNumberOrIdentifier = true;
 				if(string !== "") {
-					SALT.tokens.push(string);
+					SALT.tokens.push({ type: "Value", name: "StringValue", value: string });
 					string = character;
-					SALT.tokens.push(string);
+					SALT.tokens.push({ type: "Value", name: "StringValue", value: string });
 					string = "";
 				}
 			break;
 			case SALT.operators.subtractionOperator:
 				expectingNumberOrIdentifier = true;
 				if(string !== "") {
-					SALT.tokens.push(string);
+					SALT.tokens.push({ type: "Value", name: "StringValue", value: string });
 					string = character;
-					SALT.tokens.push(string);
+					SALT.tokens.push({ type: "Value", name: "StringValue", value: string });
 					string = "";
 				}
 			break;
 			case SALT.operators.equationOperator:
 				if(string !== "") {
-					SALT.tokens.push(string);
+					SALT.tokens.push({ type: "Value", name: "StringValue", value: string });
 					string = character;
-					SALT.tokens.push(string);
+					SALT.tokens.push({ type: "Value", name: "StringValue", value: string });
 					string = "";
 				}
 			break;
@@ -334,7 +350,7 @@ for(var index = 0; index < SALT.input.length; index++) {
 				}
 				else {
 					if(string !== "") {
-						SALT.tokens.push(SALT.operators.logicalANDOperator);
+						SALT.tokens.push({ type: "Operator", name: "LogicalANDOperator", value: SALT.operators.logicalANDOperator });
 						string = character;
 						string = "";
 					}
@@ -343,18 +359,18 @@ for(var index = 0; index < SALT.input.length; index++) {
 			case SALT.operators.divisionOperator:
 				expectingNumberOrIdentifier = true;
 				if(string !== "") {
-					SALT.tokens.push(string);
+					SALT.tokens.push({ type: "Value", name: "StringValue", value: string });
 					string = character;
-					SALT.tokens.push(string);
+					SALT.tokens.push({ type: "Value", name: "StringValue", value: string });
 					string = "";
 				}
 			break;
 			case SALT.operators.modulusOperator:
 				expectingNumberOrIdentifier = true;
 				if(string !== "") {
-					SALT.tokens.push(string);
+					SALT.tokens.push({ type: "Value", name: "StringValue", value: string });
 					string = character;
-					SALT.tokens.push(string);
+					SALT.tokens.push({ type: "Value", name: "StringValue", value: string });
 					string = "";
 				}
 			break;
@@ -362,7 +378,7 @@ for(var index = 0; index < SALT.input.length; index++) {
 				expectingNumberOrIdentifier = true;
 				string += character;
 				if(string !== "") {
-					SALT.tokens.push(string);
+					SALT.tokens.push({ type: "Value", name: "StringValue", value: string });
 					string = "";
 				}
 			break;
@@ -371,7 +387,7 @@ for(var index = 0; index < SALT.input.length; index++) {
 
 				string += character;
 				if(string !== "") {
-					SALT.tokens.push(string);
+					SALT.tokens.push({ type: "Value", name: "StringValue", value: string });
 					string = "";
 				}
 			break;

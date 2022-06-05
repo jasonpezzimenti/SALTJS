@@ -74,19 +74,21 @@ function tokenizeHyphen() {
 
 function tokenizeDoubleQuote() {
 	if(isInsideString) {
-		string += SALT.symbols.doubleQuote;
-		identifier += SALT.symbols.doubleQuote;
+		//string += SALT.symbols.doubleQuote;
+		
+		//identifier += SALT.symbols.doubleQuote;
 
 		pushIdentifierIfExists();
 		isInsideString = false;
 	}
 	else {
+		SALT.tokens.push(SALT.symbols.doubleQuote);
 		pushIdentifierIfExists();
 
 		isInsideString = true;
-		
-		string += SALT.symbols.doubleQuote;
-		identifier += SALT.symbols.doubleQuote;
+
+		//string += SALT.symbols.doubleQuote;
+		//identifier += SALT.symbols.doubleQuote;
 	}
 }
 
@@ -103,7 +105,7 @@ function tokenizeBackSlash() {
 			identifier += character + next;
 		}
 		else {
-			console.error("Unexpected end of file. We expect a backslash thingy.")
+			console.error("Unexpected end of file. We expect a backslash.");
 		}
 	}
 	else {
