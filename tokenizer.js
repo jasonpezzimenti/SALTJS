@@ -60,6 +60,8 @@ for (var index = 0; index < SALT.input.length; index++) {
                     isExpectingActionIdentifier = true;
                     isExpectingString = true;
                     isExpectingIdentifier = true;
+                    isExpectingStringOrIdentifier = true;
+                    isExpectingNumber = true;
 
                     string = "";
                     break;
@@ -80,7 +82,15 @@ for (var index = 0; index < SALT.input.length; index++) {
         else if (SALT.Helpers.isReservedKeyword(string)) {
             switch (string) {
                 case SALT.keywords.with:
+                    SALT.tokens.push({ type: "Keyword", name: "WithKeyword", value: SALT.keywords.with });
 
+                    isExpectingValue = true;
+                    isExpectingString = true;
+                    isExpectingIdentifier = true;
+                    isExpectingStringOrIdentifier = true;
+                    isExpectingNumber = true;
+
+                    string = "";
                     break;
                 case SALT.keywords.if:
                     break;
