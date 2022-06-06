@@ -1,5 +1,5 @@
 var SALT = {
-    input: 'out with "Hello.";',
+    input: 'out with firstName + lastName;',
     tokens: [
     	token = {
     		type: "",

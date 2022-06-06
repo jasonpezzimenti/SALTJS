@@ -4,6 +4,7 @@ var identifier = "",
     previous = "",
     next = "",
     position = -1,
+    identifierFound = false,
     isInsideString = false,
     isInsideParentheses = false,
     isInsideBrackets = false,
@@ -12,6 +13,7 @@ var identifier = "",
     isExpectingStringOrIdentifier = false,
     isExpectingString = false,
     isExpectingIdentifier = false,
+    isExpectingNumber = false,
     isExpectingOpeningParenthesis = false,
     isExpectingClosingParenthesis = false,
     isExpectingOpeningBracket = false,
@@ -31,7 +33,9 @@ var identifier = "",
     isExpectingExpression = false,
     isExpectingValueToOutput = false,
     isExpectingValue = false,
-    isExpectingActionIdentifier = false;
+    isExpectingActionIdentifier = false,
+    isExpectingActionIdentifierOrScope = false,
+    isExpectingStatementOrActionIdentifier = false;
 
 for (var index = 0; index < SALT.input.length; index++) {
     position = index;
@@ -39,20 +43,19 @@ for (var index = 0; index < SALT.input.length; index++) {
 
     if (isInsideString) {
         if (character === SALT.symbols.backSlash) {
-            string += character;
             previous = SALT.symbols.backSlash;
         }
-
-        if (character === SALT.symbols.doubleQuote) {
+        else if (character === SALT.symbols.doubleQuote) {
             if (previous === SALT.symbols.backSlash) {
                 string += character;
-                previous = "";
             }
             else {
                 SALT.tokens.push({ type: "Value", name: "StringValue", value: string });
                 SALT.tokens.push({ type: "Symbol", name: "DoubleQuoteSymbol", value: SALT.symbols.doubleQuote });
 
                 isInsideString = false;
+                isExpectingStringOrIdentifier = false;
+                isExpectingConcatenationOperatorOrEndOfStatement = true;
 
                 string = "";
             }
@@ -62,91 +65,117 @@ for (var index = 0; index < SALT.input.length; index++) {
         }
     }
     else {
-        if (character !== SALT.symbols.whiteSpace) {
-            string += character;
-        }
-
-        if (SALT.Helpers.isOperator(string)) {
+        if (SALT.Helpers.isReservedKeyword(string) || SALT.Helpers.isOperator(string)) {
             switch (string) {
+                case SALT.operators.actionOperator:
+                    SALT.tokens.push({ type: "Operator", name: "ActionOperator", value: SALT.operators.actionOperator });
+
+                    isExpectingActionIdentifierOrScope = true;
+
+                    string = "";
+                    break;
                 case SALT.operators.out:
                     SALT.tokens.push({ type: "Operator", name: "OutOperator", value: SALT.operators.out });
 
-                    isExpectingValueToOutput = true;
-                    isExpectingString = true;
-                    isExpectingIdentifier = true;
                     isExpectingStringOrIdentifier = true;
-                    isExpectingKeyword = true;
-                    isExpectingWithKeyword = true;
+                    isExpectingNumber = true;
 
                     string = "";
                     break;
                 case SALT.operators.return:
-                    SALT.tokens.push({ type: "Operator", name: "ReturnOperator", value: SALT.operator.return });
+                    SALT.tokens.push({ type: "Operator", name: "ReturnOperator", value: SALT.operators.return });
 
-                    isExpectingValue = true;
-                    isExpectingActionIdentifier = true;
-                    isExpectingString = true;
-                    isExpectingIdentifier = true;
                     isExpectingStringOrIdentifier = true;
-                    isExpectingNumber = true;
 
                     string = "";
                     break;
-                case SALT.operators.actionOperator:
-                    SALT.tokens.push({ type: "Operator", name: "ActionOperator", value: SALT.operators.actionOperator });
+                case SALT.keywords.with:
+                    SALT.tokens.push({ type: "Keyword", name: "WithKeyword", value: SALT.keywords.with });
+                    string = "";
+                    break;
+                case SALT.operators.concatenationOperator:
+                    SALT.tokens.push({ type: "Operator", name: "ConcatenationOperator", value: SALT.operators.concatenationOperator });
 
-                    isExpectingScope = true;
-                    isExpectingOpeningBrace = true;
-                    isExpectingActionIdentifier = true;
+                    isExpectingStringOrIdentifier = true;
+
+                    string = "";
+                    break;
+                case SALT.operators.assignmentOperator:
+                    if (isExpectingStatementOrActionIdentifier) {
+                        SALT.tokens.push({ type: "Identifier", name: "Identifier", value: string });
+                        SALT.tokens.push({ type: "Operator", name: "AssignmentOperator", value: SALT.operators.assignmentOperator });
+                    }
 
                     string = "";
                     break;
                 default:
-                    // Figure this out later.
-                    if (string === SALT.symbols.whiteSpace) {
-                        string = "";
-                    }
+                    // Remove if this breaks anything. :P
+                    string += character;
                     break;
             }
         }
-        else if (SALT.Helpers.isReservedKeyword(string)) {
-            switch (string) {
-                case SALT.keywords.with:
-                    SALT.tokens.push({ type: "Keyword", name: "WithKeyword", value: SALT.keywords.with });
+        else if (SALT.Helpers.isSymbol(character)) {
+            switch (character) {
+                case SALT.symbols.doubleQuote:
+                    SALT.tokens.push({ type: "Symbol", name: "DoubleQuoteSymbol", value: SALT.symbols.doubleQuote });
 
-                    isExpectingValue = true;
-                    isExpectingString = true;
-                    isExpectingIdentifier = true;
-                    isExpectingStringOrIdentifier = true;
-                    isExpectingNumber = true;
+                    isInsideString = true;
 
                     string = "";
                     break;
-                case SALT.keywords.if:
-                    break;
-                case SALT.keywords.else:
-                    break;
-            }
-        }
-        else if (SALT.Helpers.isSymbol(string)) {
-            if (string !== SALT.symbols.whiteSpace) {
-                SALT.tokens.push({ type: "Symbol", name: "Symbol", value: string });
+                case SALT.symbols.EOS:
+                    if (isExpectingStringOrIdentifier) {
+                        SALT.tokens.push({ type: "Identifier", name: "Identifier", value: string });
+                    }
 
-                if (character === SALT.symbols.doubleQuote) {
-                    isInsideString = true;
-                }
+                    SALT.tokens.push({ type: "Symbol", name: "EndOfStatementSymbol", value: SALT.symbols.EOS });
 
-                string = "";
+                    isInsideString = false;
+                    isExpectingString = false;
+                    isExpectingIdentifier = false;
+                    isExpectingStringOrIdentifier = false;
+                    isExpectingNumber = false;
+
+                    string = "";
+                    break;
+                case SALT.operators.concatenationOperator:
+                    if (isExpectingStringOrIdentifier) {
+                        SALT.tokens.push({ type: "Identifier", name: "Identifier", value: string });
+                    }
+
+                    SALT.tokens.push({ type: "Operator", name: "ConcatenationOperator", value: SALT.operators.concatenationOperator });
+
+                    isExpectingStringOrIdentifier = true;
+
+                    string = "";
+                    break;
+                case SALT.symbols.openingBrace:
+                    SALT.tokens.push({ type: "Symbol", name: "OpeningBraceSymbol", value: SALT.symbols.openingBrace });
+
+                    isExpectingStatementOrActionIdentifier = true;
+
+                    string = "";
+                    break;
+                case SALT.operators.assignmentOperator:
+                    if (isExpectingStatementOrActionIdentifier) {
+                        SALT.tokens.push({ type: "Identifier", name: "Identifier", value: string });
+                        SALT.tokens.push({ type: "Operator", name: "AssignmentOperator", value: SALT.operators.assignmentOperator });
+                    }
+
+                    string = "";
+                    break;
+                default:
+                    // Remove if this breaks anything. :P
+                    string += character;
+                    break;
             }
         }
         else {
-            if (SALT.Helpers.isLetter(string)) {
-                if (character === SALT.symbols.whiteSpace) {
-                    string = "";
-                }
+            if (character === SALT.symbols.whiteSpace) {
+                continue;
             }
             else {
-
+                string += character;
             }
         }
     }
